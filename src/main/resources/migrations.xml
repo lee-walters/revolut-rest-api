@@ -46,13 +46,13 @@
 			<column name="id" type="bigint" autoIncrement="true">
 				<constraints primaryKey="true" nullable="false" />
 			</column>
-			<column name="from_account_holder_id" type="bigint">
-				<constraints nullable="false" foreignKeyName="fk_from_account_holder"
-					references="account_holder(id)" />
+			<column name="from_account_id" type="bigint">
+				<constraints nullable="false" foreignKeyName="fk_from_account"
+					references="account(id)" />
 			</column>
-			<column name="to_account_holder_id" type="bigint">
-				<constraints nullable="false" foreignKeyName="fk_to_account_holder"
-					references="account_holder(id)" />
+			<column name="to_account_id" type="bigint">
+				<constraints nullable="false" foreignKeyName="fk_to_account"
+					references="account(id)" />
 			</column>
 			<column name="amount" type="decimal(19,2)">
 				<constraints nullable="false" />

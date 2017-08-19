@@ -42,10 +42,8 @@ public class AccountHolder
     
   }
   
-  public AccountHolder(long id, String fullName, String email)
+  public AccountHolder(String fullName, String email)
   {
-    super();
-    this.id = id;
     this.fullName = fullName;
     this.email = email;
   }

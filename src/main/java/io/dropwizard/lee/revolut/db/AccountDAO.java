@@ -3,7 +3,6 @@ package io.dropwizard.lee.revolut.db;
 import io.dropwizard.hibernate.AbstractDAO;
 import io.dropwizard.lee.revolut.core.Account;
 
-import org.hibernate.Criteria;
 import org.hibernate.SessionFactory;
 import org.hibernate.query.Query;
 
@@ -30,7 +29,7 @@ public class AccountDAO extends AbstractDAO<Account>
     return query.uniqueResult();
   }
 
-  public Account create(Account account)
+  public Account save(Account account)
   {
     return persist(account);
   }

@@ -28,7 +28,7 @@ public class AccountResource
   @UnitOfWork
   public Account createAccount(Account account)
   {
-    return accountDAO.create(account);
+    return accountDAO.save(account);
   }
 
   @GET

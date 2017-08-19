@@ -68,7 +68,7 @@ public class RevolutApplication extends Application<RevolutConfiguration>
     environment.jersey().register(new AccountResource(accountDAO));
     environment.jersey().register(new AccountHolderResource(accountHolderDAO));
     environment.jersey().register(new TransactionResource(transactionDAO));
-    environment.jersey().register(new AccountManagementResource(accountDAO, accountHolderDAO));
+    environment.jersey().register(new AccountManagementResource(accountDAO, accountHolderDAO, transactionDAO));
   }
 
 }

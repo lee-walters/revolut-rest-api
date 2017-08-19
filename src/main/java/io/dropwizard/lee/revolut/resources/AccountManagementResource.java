@@ -18,12 +18,15 @@ import javax.ws.rs.core.MediaType;
 
 import io.dropwizard.hibernate.UnitOfWork;
 import io.dropwizard.jersey.params.IntParam;
-import io.dropwizard.lee.revolut.api.AccountInfo;
-import io.dropwizard.lee.revolut.api.AccountTransferInfo;
+import io.dropwizard.lee.revolut.api.AccountInfoDTO;
+import io.dropwizard.lee.revolut.api.AccountTransferInfoDTO;
+import io.dropwizard.lee.revolut.api.TransferDTO;
 import io.dropwizard.lee.revolut.core.Account;
 import io.dropwizard.lee.revolut.core.AccountHolder;
+import io.dropwizard.lee.revolut.core.Transaction;
 import io.dropwizard.lee.revolut.db.AccountDAO;
 import io.dropwizard.lee.revolut.db.AccountHolderDAO;
+import io.dropwizard.lee.revolut.db.TransactionDAO;
 
 @Path("/account-management")
 @Produces(MediaType.APPLICATION_JSON)
@@ -31,21 +34,23 @@ public class AccountManagementResource
 {
   private final AccountDAO accountDAO;
   private final AccountHolderDAO accountHolderDAO;
+  private final TransactionDAO transactionDAO;
   
-  public AccountManagementResource(AccountDAO accountDAO, AccountHolderDAO accountHolderDAO)
+  public AccountManagementResource(AccountDAO accountDAO, AccountHolderDAO accountHolderDAO, TransactionDAO transactionDAO)
   {
     this.accountDAO = accountDAO;
     this.accountHolderDAO = accountHolderDAO;
+    this.transactionDAO = transactionDAO;
   }
   
   @PUT
   @UnitOfWork
   @Path("/create-new")
-  public AccountInfo createAccountHolder(@Valid AccountHolder accountHolder)
+  public AccountInfoDTO createAccountHolder(@Valid AccountHolder accountHolder)
   {
     AccountHolder newAccountHolder = accountHolderDAO.create(accountHolder);
     Account newAccount = null;
-    AccountInfo info = new AccountInfo();
+    AccountInfoDTO info = new AccountInfoDTO();
     
     if (newAccountHolder != null)
     {
@@ -56,8 +61,8 @@ public class AccountManagementResource
       // Default balance for opening an account
       BigDecimal balance = new BigDecimal(1000);
       
-      newAccount = accountDAO.create(new Account(accountNumber, balance, newAccountHolder));
-      info = new AccountInfo(newAccountHolder.getFullName(), newAccountHolder.getEmail(), newAccount.getAccountNumber(), newAccount.getBalance());
+      newAccount = accountDAO.save(new Account(accountNumber, balance, newAccountHolder));
+      info = new AccountInfoDTO(newAccountHolder.getFullName(), newAccountHolder.getEmail(), newAccount.getAccountNumber(), newAccount.getBalance());
     }
     
     return info;
@@ -66,14 +71,14 @@ public class AccountManagementResource
   @GET
   @UnitOfWork
   @Path("/{accountNumber}")
-  public AccountInfo getAccountHolderByAccountNumber(@Min(10000000) @Max(99999999) @PathParam("accountNumber") IntParam accountNumber)
+  public AccountInfoDTO getAccountHolderByAccountNumber(@Min(10000000) @Max(99999999) @PathParam("accountNumber") IntParam accountNumber)
   {
-    AccountInfo info = new AccountInfo();
+    AccountInfoDTO info = new AccountInfoDTO();
     Account account = accountDAO.findByAccountNumber(accountNumber.get().intValue());
     
     if (account != null)
     {
-      info = new AccountInfo(account.getAccountHolder().getFullName(), account.getAccountHolder().getEmail(), account.getAccountNumber(), account.getBalance());
+      info = new AccountInfoDTO(account.getAccountHolder().getFullName(), account.getAccountHolder().getEmail(), account.getAccountNumber(), account.getBalance());
     }
     
     return info;
@@ -81,16 +86,16 @@ public class AccountManagementResource
   
   @GET
   @UnitOfWork
-  public List<AccountInfo> listAllAccountHoldersWithAccounts()
+  public List<AccountInfoDTO> listAllAccountHoldersWithAccounts()
   {
-    List<AccountInfo> infos = new ArrayList<>();
+    List<AccountInfoDTO> infos = new ArrayList<>();
     List<Account> accounts = accountDAO.findAll();
     
     if (accounts != null && !accounts.isEmpty())
     {
       for (Account account : accounts)
       {
-        infos.add(new AccountInfo(account.getAccountHolder().getFullName(), account.getAccountHolder().getEmail(), account.getAccountNumber(), account.getBalance()));
+        infos.add(new AccountInfoDTO(account.getAccountHolder().getFullName(), account.getAccountHolder().getEmail(), account.getAccountNumber(), account.getBalance()));
       }
     }
     
@@ -99,21 +104,25 @@ public class AccountManagementResource
   
   @POST
   @UnitOfWork
-  @Path("/transfer/{from}/{to}/{amount}")
-  public AccountTransferInfo transferBetweenAccounts(@Min(10000000) @Max(99999999) @PathParam("from") IntParam from, @Min(10000000) @Max(99999999) @PathParam("to") IntParam to, @Min(1) @Max(99999999) @PathParam("amount") IntParam amount)
+  @Path("/transfer")
+  public AccountTransferInfoDTO transferBetweenAccounts(@Valid TransferDTO transferDTO)
   {
-    AccountTransferInfo transferInfo = new AccountTransferInfo();
-    Account fromAcc = accountDAO.findByAccountNumber(from.get().intValue());
-    Account toAcc = accountDAO.findByAccountNumber(to.get().intValue());
+    AccountTransferInfoDTO transferInfo = new AccountTransferInfoDTO();
+    Account fromAcc = accountDAO.findByAccountNumber(transferDTO.getFrom());
+    Account toAcc = accountDAO.findByAccountNumber(transferDTO.getTo());
     
-    if (fromAcc != null && toAcc != null && fromAcc.getBalance().intValue() >= amount.get().intValue())
+    if (fromAcc != null && toAcc != null && fromAcc.getBalance().intValue() >= transferDTO.getAmount().intValue())
     {
       int fromBalance = fromAcc.getBalance().intValue();
-      fromAcc.setBalance(new BigDecimal(fromBalance - amount.get().intValue()));
+      fromAcc.setBalance(new BigDecimal(fromBalance - transferDTO.getAmount().intValue()));
       int toBalance = toAcc.getBalance().intValue();
-      toAcc.setBalance(new BigDecimal(toBalance + amount.get().intValue()));
+      toAcc.setBalance(new BigDecimal(toBalance + transferDTO.getAmount().intValue()));
       
-      transferInfo = new AccountTransferInfo(fromAcc.getAccountHolder().getFullName(), toAcc.getAccountHolder().getFullName(), amount.get().intValue());
+      accountDAO.save(fromAcc);
+      accountDAO.save(toAcc);
+      
+      transferInfo = new AccountTransferInfoDTO(fromAcc.getAccountHolder().getFullName(), toAcc.getAccountHolder().getFullName(), transferDTO.getAmount());
+      transactionDAO.create(new Transaction(fromAcc, toAcc, transferDTO.getAmount()));
     }
 
     return transferInfo;

@@ -1,13 +1,33 @@
-# Revolut
+# Revolut Assignment
 
-How to start the Revolut application
----
+xxx
 
-1. Run `mvn clean install` to build your application
-1. Start application with `java -jar target/revolut-rest-api-1.0-SNAPSHOT.jar server config.yml`
-1. To check that your application is running enter url `http://localhost:8080`
+# Overview
 
-Health Check
----
+xxx
 
-To see your applications health enter url `http://localhost:8081/healthcheck`
+# Running The Application
+
+To test the application run the following commands.
+
+* To package the app, run the following from the root dropwizard directory.
+
+        mvn package
+
+* To setup the h2 database run.
+
+        java -jar target/revolut-rest-api-1.0-SNAPSHOT.jar db migrate revolut.yml
+
+* To run the server run.
+
+        java -jar target/revolut-rest-api-1.0-SNAPSHOT.jar server revolut.yml
+
+* To hit the xxx endpoint 
+
+	http://localhost:8080/xxx
+
+* To post data into the application.
+
+	curl -H "Content-Type: application/json" -X POST -d '{"xxx":"yyy","aaa":"bbb"}' http://localhost:8080/zzz
+	
+	open http://localhost:8080/yyy

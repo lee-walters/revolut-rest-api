@@ -1,3 +1,8 @@
+logging:
+  level: INFO
+  loggers:
+    io.dropwizard.lee.revolut: DEBUG
+
 # Database settings.
 database:
 

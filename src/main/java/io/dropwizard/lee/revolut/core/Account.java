@@ -4,10 +4,12 @@ import java.math.BigDecimal;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
+import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.JoinColumn;
+import javax.persistence.ManyToOne;
 import javax.persistence.NamedQueries;
 import javax.persistence.NamedQuery;
 import javax.persistence.Table;
@@ -21,12 +23,13 @@ public class Account
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private long id;
 
-  @Column(name = "accountNumber", nullable = false)
-  private long accountNumber;
+  @Column(name = "account_number", nullable = false, unique = true, length = 8)
+  private int accountNumber;
 
   @Column(name = "balance", nullable = false)
   private BigDecimal balance;
 
+  @ManyToOne(fetch = FetchType.EAGER)
   @JoinColumn(name = "account_holder_id", referencedColumnName = "id")
   private AccountHolder accountHolder;
   
@@ -34,7 +37,7 @@ public class Account
   {
   }
 
-  public Account(long accountNumber, BigDecimal balance, AccountHolder accountHolder)
+  public Account(int accountNumber, BigDecimal balance, AccountHolder accountHolder)
   {
     this.accountNumber = accountNumber;
     this.balance = balance;
@@ -51,12 +54,12 @@ public class Account
     this.id = id;
   }
 
-  public long getAccountNumber()
+  public int getAccountNumber()
   {
     return accountNumber;
   }
 
-  public void setAccountNumber(long accountNumber)
+  public void setAccountNumber(int accountNumber)
   {
     this.accountNumber = accountNumber;
   }

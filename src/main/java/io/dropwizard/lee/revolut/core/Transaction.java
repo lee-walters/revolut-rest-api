@@ -4,10 +4,12 @@ import java.math.BigDecimal;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
+import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.JoinColumn;
+import javax.persistence.ManyToOne;
 import javax.persistence.NamedQueries;
 import javax.persistence.NamedQuery;
 import javax.persistence.Table;
@@ -28,9 +30,11 @@ public class Transaction
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private long id;
   
+  @ManyToOne(fetch = FetchType.EAGER)
   @JoinColumn(name = "from_account_holder_id", referencedColumnName = "id")
   private AccountHolder fromAccountHolder;
   
+  @ManyToOne(fetch = FetchType.EAGER)
   @JoinColumn(name = "to_account_holder_id", referencedColumnName = "id")
   private AccountHolder toAccountHolder;
   

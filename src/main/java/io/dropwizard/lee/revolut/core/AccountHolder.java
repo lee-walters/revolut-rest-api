@@ -9,6 +9,9 @@ import javax.persistence.NamedQueries;
 import javax.persistence.NamedQuery;
 import javax.persistence.Table;
 
+import org.hibernate.validator.constraints.Email;
+import org.hibernate.validator.constraints.NotEmpty;
+
 @Entity
 @Table(name = "account_holder")
 @NamedQueries(
@@ -25,9 +28,12 @@ public class AccountHolder
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private long id;
   
-  @Column(name = "fullName", nullable = false)
+  @NotEmpty
+  @Column(name = "full_name", nullable = false)
   private String fullName;
   
+  @Email
+  @NotEmpty
   @Column(name = "email", nullable = false)
   private String email;
 

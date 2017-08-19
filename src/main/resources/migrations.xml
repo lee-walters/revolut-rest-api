@@ -1,25 +1,62 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<databaseChangeLog
-        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
-        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
          http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.1.xsd">
 
-    <changeSet id="1" author="lee">
-        <createTable tableName="account">
-            <column name="id" type="bigint" autoIncrement="true">
-                <constraints primaryKey="true" nullable="false"/>
-            </column>
-            <column name="accountNumber" type="bigint">
-                <constraints nullable="false"/>
-            </column>
-            <column name="balance" type="decimal(19,2)">
-                <constraints nullable="false"/>
-            </column>
-            <column name="account_holder_id" type="bigint">
-                <constraints nullable="false"/>
-            </column>
-        </createTable>
-    </changeSet>
+	<changeSet id="create account holder table" author="lee">
+		<createTable tableName="account_holder">
+			<column name="id" type="bigint" autoIncrement="true">
+				<constraints primaryKey="true" nullable="false" />
+			</column>
+			<column name="full_name" type="varchar(50)">
+				<constraints nullable="false" />
+			</column>
+			<column name="email" type="varchar(100)">
+				<constraints nullable="false" />
+			</column>
+		</createTable>
+	</changeSet>
+
+	<changeSet id="create account table" author="lee">
+		<createTable tableName="account">
+			<column name="id" type="bigint" autoIncrement="true">
+				<constraints primaryKey="true" nullable="false" />
+			</column>
+			<column name="account_number" type="int(8)">
+				<constraints nullable="false" />
+			</column>
+			<column name="balance" type="decimal(19,2)">
+				<constraints nullable="false" />
+			</column>
+			<column name="account_holder_id" type="bigint">
+				<constraints nullable="false" foreignKeyName="fk_account_holder"
+					references="account_holder(id)" />
+			</column>
+		</createTable>
+
+		<createIndex tableName="account" unique="true" indexName="account_account_number_uk">
+			<column name="account_number" />
+		</createIndex>
+	</changeSet>
+
+	<changeSet id="create transaction table" author="lee">
+		<createTable tableName="transaction">
+			<column name="id" type="bigint" autoIncrement="true">
+				<constraints primaryKey="true" nullable="false" />
+			</column>
+			<column name="from_account_holder_id" type="bigint">
+				<constraints nullable="false" foreignKeyName="fk_from_account_holder"
+					references="account_holder(id)" />
+			</column>
+			<column name="to_account_holder_id" type="bigint">
+				<constraints nullable="false" foreignKeyName="fk_to_account_holder"
+					references="account_holder(id)" />
+			</column>
+			<column name="amount" type="decimal(19,2)">
+				<constraints nullable="false" />
+			</column>
+		</createTable>
+	</changeSet>
 </databaseChangeLog>

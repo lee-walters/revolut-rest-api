@@ -1,12 +1,17 @@
-# Revolut Assignment
+# Revolut Task
 
-xxx
+As the Spring framework was disallowed, for this task I decided to learn and adopt the Dropwizard framework, an open source Java framework for developing high performing RESTful applications. The Dropwizard framework has compatibility with supporting libraries:
 
-# Overview
+* Embedded Jetty
+* JAX-RS
+* JSON
+* Logging
+* Hibernate
+* Metrics
 
-xxx
+If the above list isn't enough of a reason for choosing this framework which helps satisfy the task requirements, other reasons include a quick project bootstrap, where all we require is a pom of dependencies to get going. Application metrics are also available which provides information such as request/response time, we just have to annotate the endpoint with @Timed. Productivity, every Dropwizard application has one main method program which starts the Jetty container.
 
-# Running The Application
+## Running The Application
 
 To test the application run the following commands
 
@@ -22,24 +27,22 @@ To test the application run the following commands
 
         java -jar target/revolut-rest-api-1.0.jar server revolut.yml
 
-* Endpoints 
-
-    GET     /account-holders (io.dropwizard.lee.revolut.resources.AccountHolderResource)
-    POST    /account-holders (io.dropwizard.lee.revolut.resources.AccountHolderResource)
+## Endpoints 
     
-    GET     /account-management (io.dropwizard.lee.revolut.resources.AccountManagementResource)
-    PUT     /account-management/create-new (io.dropwizard.lee.revolut.resources.AccountManagementResource)
-    POST    /account-management/transfer (io.dropwizard.lee.revolut.resources.AccountManagementResource)
-    GET     /account-management/{accountNumber} (io.dropwizard.lee.revolut.resources.AccountManagementResource)
-    
-    GET     /accounts (io.dropwizard.lee.revolut.resources.AccountResource)
-    POST    /accounts (io.dropwizard.lee.revolut.resources.AccountResource)
-    
-    GET     /transactions (io.dropwizard.lee.revolut.resources.TransactionResource)
-    POST    /transactions (io.dropwizard.lee.revolut.resources.TransactionResource)
-
-* To put a new account-holder into the application
-
-	curl -H "Content-Type: application/json" -X PUT -d '{"fullName":"Joe Bloggs","email":"j.bloggs@gmail.com"}' http://localhost:8080/account-management/create-new
-	
-	open http://localhost:8080/account-management
+```javascript
+GET     /account-management
+```
+```javascript
+PUT     /account-management/create-new
+		JSON Body: {"fullName":"Joe Bloggs","email":"j.bloggs@gmail.com"}
+```
+```javascript
+POST    /account-management/transfer
+		JSON Body: {"from":"14589254","to":"78456325","amount":"200"}
+```
+```javascript
+GET     /account-management/{accountNumber} 
+```    
+```javascript
+GET     /transactions
+```

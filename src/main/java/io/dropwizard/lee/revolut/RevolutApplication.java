@@ -14,6 +14,7 @@ import io.dropwizard.lee.revolut.db.TransactionDAO;
 import io.dropwizard.lee.revolut.resources.AccountHolderResource;
 import io.dropwizard.lee.revolut.resources.AccountManagementResource;
 import io.dropwizard.lee.revolut.resources.AccountResource;
+import io.dropwizard.lee.revolut.resources.SyncResource;
 import io.dropwizard.lee.revolut.resources.TransactionResource;
 import io.dropwizard.migrations.MigrationsBundle;
 import io.dropwizard.setup.Bootstrap;
@@ -64,11 +65,12 @@ public class RevolutApplication extends Application<RevolutConfiguration>
     final AccountDAO accountDAO = new AccountDAO(hibernateBundle.getSessionFactory());
     final AccountHolderDAO accountHolderDAO = new AccountHolderDAO(hibernateBundle.getSessionFactory());
     final TransactionDAO transactionDAO = new TransactionDAO(hibernateBundle.getSessionFactory());
+    final SyncResource sync = new SyncResource();
 
     environment.jersey().register(new AccountResource(accountDAO));
     environment.jersey().register(new AccountHolderResource(accountHolderDAO));
     environment.jersey().register(new TransactionResource(transactionDAO));
-    environment.jersey().register(new AccountManagementResource(accountDAO, accountHolderDAO, transactionDAO));
+    environment.jersey().register(new AccountManagementResource(accountDAO, accountHolderDAO, transactionDAO, sync));
   }
 
 }

@@ -35,14 +35,16 @@ public class AccountManagementResource
   private final AccountDAO accountDAO;
   private final AccountHolderDAO accountHolderDAO;
   private final TransactionDAO transactionDAO;
-  
-  public AccountManagementResource(AccountDAO accountDAO, AccountHolderDAO accountHolderDAO, TransactionDAO transactionDAO)
+  private SyncResource sync;
+
+  public AccountManagementResource(AccountDAO accountDAO, AccountHolderDAO accountHolderDAO, TransactionDAO transactionDAO, SyncResource sync)
   {
     this.accountDAO = accountDAO;
     this.accountHolderDAO = accountHolderDAO;
     this.transactionDAO = transactionDAO;
+    this.sync = sync;
   }
-  
+
   @PUT
   @UnitOfWork
   @Path("/create-new")
@@ -51,7 +53,7 @@ public class AccountManagementResource
     AccountHolder newAccountHolder = accountHolderDAO.create(accountHolder);
     Account newAccount = null;
     AccountInfoDTO info = new AccountInfoDTO();
-    
+
     if (newAccountHolder != null)
     {
       // Generate random account number
@@ -60,11 +62,11 @@ public class AccountManagementResource
 
       // Default balance for opening an account
       BigDecimal balance = new BigDecimal(1000);
-      
+
       newAccount = accountDAO.save(new Account(accountNumber, balance, newAccountHolder));
       info = new AccountInfoDTO(newAccountHolder.getFullName(), newAccountHolder.getEmail(), newAccount.getAccountNumber(), newAccount.getBalance());
     }
-    
+
     return info;
   }
 
@@ -75,22 +77,22 @@ public class AccountManagementResource
   {
     AccountInfoDTO info = new AccountInfoDTO();
     Account account = accountDAO.findByAccountNumber(accountNumber.get().intValue());
-    
+
     if (account != null)
     {
       info = new AccountInfoDTO(account.getAccountHolder().getFullName(), account.getAccountHolder().getEmail(), account.getAccountNumber(), account.getBalance());
     }
-    
+
     return info;
   }
-  
+
   @GET
   @UnitOfWork
   public List<AccountInfoDTO> listAllAccountHoldersWithAccounts()
   {
     List<AccountInfoDTO> infos = new ArrayList<>();
     List<Account> accounts = accountDAO.findAll();
-    
+
     if (accounts != null && !accounts.isEmpty())
     {
       for (Account account : accounts)
@@ -98,35 +100,42 @@ public class AccountManagementResource
         infos.add(new AccountInfoDTO(account.getAccountHolder().getFullName(), account.getAccountHolder().getEmail(), account.getAccountNumber(), account.getBalance()));
       }
     }
-    
+
     return infos;
   }
-  
+
   @POST
   @UnitOfWork
   @Path("/transfer")
   public AccountTransferInfoDTO transferBetweenAccounts(@Valid TransferDTO transferDTO)
   {
-    AccountTransferInfoDTO transferInfo = new AccountTransferInfoDTO();
-    Account fromAcc = accountDAO.findByAccountNumber(transferDTO.getFrom());
-    Account toAcc = accountDAO.findByAccountNumber(transferDTO.getTo());
-    
-    if (fromAcc != null && toAcc != null && fromAcc.getBalance().intValue() >= transferDTO.getAmount().intValue())
-    {
-      int fromBalance = fromAcc.getBalance().intValue();
-      fromAcc.setBalance(new BigDecimal(fromBalance - transferDTO.getAmount().intValue()));
-      int toBalance = toAcc.getBalance().intValue();
-      toAcc.setBalance(new BigDecimal(toBalance + transferDTO.getAmount().intValue()));
-      
-      accountDAO.save(fromAcc);
-      accountDAO.save(toAcc);
-      
-      transferInfo = new AccountTransferInfoDTO(fromAcc.getAccountHolder().getFullName(), toAcc.getAccountHolder().getFullName(), transferDTO.getAmount());
-      transactionDAO.create(new Transaction(fromAcc, toAcc, transferDTO.getAmount()));
-    }
+    sync.getLock().lock();
 
-    return transferInfo;
+    try
+    {
+      AccountTransferInfoDTO transferInfo = new AccountTransferInfoDTO();
+      Account fromAcc = accountDAO.findByAccountNumber(transferDTO.getFrom());
+      Account toAcc = accountDAO.findByAccountNumber(transferDTO.getTo());
+
+      if (fromAcc != null && toAcc != null && fromAcc.getBalance().intValue() >= transferDTO.getAmount().intValue())
+      {
+        int fromBalance = fromAcc.getBalance().intValue();
+        fromAcc.setBalance(new BigDecimal(fromBalance - transferDTO.getAmount().intValue()));
+        int toBalance = toAcc.getBalance().intValue();
+        toAcc.setBalance(new BigDecimal(toBalance + transferDTO.getAmount().intValue()));
+
+        accountDAO.save(fromAcc);
+        accountDAO.save(toAcc);
+
+        transferInfo = new AccountTransferInfoDTO(fromAcc.getAccountHolder().getFullName(), toAcc.getAccountHolder().getFullName(), transferDTO.getAmount());
+        transactionDAO.create(new Transaction(fromAcc, toAcc, transferDTO.getAmount()));
+      }
+
+      return transferInfo;
+    }
+    finally
+    {
+      sync.getLock().unlock();
+    }
   }
-  
-  
 }

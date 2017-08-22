@@ -173,21 +173,78 @@ public class IntegrationTest
   {
     TransferDTO transferDTO = new TransferDTO(12345678, 87654321, new BigDecimal("0"));
 
-    final String response = RULE.client().target("http://localhost:" + RULE.getLocalPort() 
-      + "/account-management/transfer").request().post(Entity.entity(transferDTO, MediaType.APPLICATION_JSON_TYPE)).readEntity(String.class);
-    
+    final String response = RULE.client().target("http://localhost:" + RULE.getLocalPort()
+    + "/account-management/transfer").request().post(Entity.entity(transferDTO, MediaType.APPLICATION_JSON_TYPE)).readEntity(String.class);
+
     assertThat(response).contains("amount must be greater than or equal to 1");
   }
-  
+
   @Test
   public void e_shouldNotTransferFundsFromOneAccountToAnotherIfAccountNumberInvalid() throws Exception
   {
     TransferDTO transferDTO = new TransferDTO(12345678, 3455, new BigDecimal("200"));
 
-    final String response = RULE.client().target("http://localhost:" + RULE.getLocalPort() 
-      + "/account-management/transfer").request().post(Entity.entity(transferDTO, MediaType.APPLICATION_JSON_TYPE)).readEntity(String.class);
-    
+    final String response = RULE.client().target("http://localhost:" + RULE.getLocalPort()
+    + "/account-management/transfer").request().post(Entity.entity(transferDTO, MediaType.APPLICATION_JSON_TYPE)).readEntity(String.class);
+
     assertThat(response).contains("to must be greater than or equal to 10000000");
+  }
+
+  @Test
+  public void f_shouldHandleConcurrentTransfers() throws Exception
+  {
+    final List<AccountInfoDTO> allAccountHolders = RULE.client().target("http://localhost:" + RULE.getLocalPort() + "/account-management").request().get(new GenericType<List<AccountInfoDTO>>()
+    {
+    });
+
+    int fromAccountNumber = allAccountHolders.get(0).getAccountNumber();
+    int toAccountNumber = allAccountHolders.get(1).getAccountNumber();
+    BigDecimal toAccountOriginalBalance = allAccountHolders.get(1).getBalance();
+
+    BigDecimal expectedThreadOneBalance = new BigDecimal(toAccountOriginalBalance.intValue() + new BigDecimal(100).intValue());
+    BigDecimal expectedThreadTwoBalance = new BigDecimal(toAccountOriginalBalance.intValue() + new BigDecimal(450).intValue());
+
+    Runnable run1 = new Runnable()
+    {
+      @Override
+      public void run()
+      {
+        TransferDTO transferDTO = new TransferDTO(fromAccountNumber, toAccountNumber, new BigDecimal("100"));
+        RULE.client().target("http://localhost:" + RULE.getLocalPort() + "/account-management/transfer").request().post(Entity.entity(transferDTO, MediaType.APPLICATION_JSON_TYPE)).readEntity(AccountTransferInfoDTO.class);
+
+        Thread.currentThread();
+        try
+        {
+          Thread.sleep(1000);
+        }
+        catch (InterruptedException e)
+        {
+          e.printStackTrace();
+        }
+
+        final AccountInfoDTO toAccountHolderReloaded = RULE.client().target("http://localhost:" + RULE.getLocalPort() + "/account-management/" + toAccountNumber).request().get(AccountInfoDTO.class);
+
+        // Check that the process is thread safe and that Thread2 hasn't increased the balance by 350
+        assertThat(toAccountHolderReloaded.getBalance().intValue()).isEqualTo(expectedThreadOneBalance.intValue());
+      }
+    };
+
+    Runnable run2 = new Runnable()
+    {
+      @Override
+      public void run()
+      {
+        TransferDTO transferDTO = new TransferDTO(fromAccountNumber, toAccountNumber, new BigDecimal("350"));
+        RULE.client().target("http://localhost:" + RULE.getLocalPort() + "/account-management/transfer").request().post(Entity.entity(transferDTO, MediaType.APPLICATION_JSON_TYPE)).readEntity(AccountTransferInfoDTO.class);
+
+        final AccountInfoDTO toAccountHolderReloaded = RULE.client().target("http://localhost:" + RULE.getLocalPort() + "/account-management/" + toAccountNumber).request().get(AccountInfoDTO.class);
+
+        assertThat(toAccountHolderReloaded.getBalance().intValue()).isEqualTo(expectedThreadTwoBalance.intValue());
+      }
+    };
+
+    new Thread(run1).start();
+    new Thread(run2).start();
   }
 
   @Test
